@@ -1,6 +1,6 @@
 # flutter_todo_app
 
-A Flutter Todo application built using the Provider for state management.
+A starter application for building TODO application in Flutter.
 
 ## Running the App
 
@@ -13,4 +13,4 @@ A Flutter Todo application built using the Provider for state management.
    flutter run
    ```
 3. For Android emulator, ensure the backend API is reachable at `http://10.0.2.2:5159/api`.
-4. For iOS simulator or device, use `http://localhost:5159/api`.
+4. For iOS simulator, use `http://localhost:5159/api`.
