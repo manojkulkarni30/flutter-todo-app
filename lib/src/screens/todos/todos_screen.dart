@@ -1,49 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../services/todo_service.dart';
-import '../../services/todo_service_api_impl.dart';
+import '../../providers/todo_provider.dart';
 
-class TodosScreen extends StatelessWidget {
+class TodosScreen extends StatefulWidget {
   const TodosScreen({super.key});
 
-  Future<void> _handleButtonPressed() async {
-    try {
-      TodoService todoService = TodoServiceApiImpl();
+  @override
+  State<TodosScreen> createState() => _TodosScreenState();
+}
 
-      // Fetch Todos
-      // List<Todo> todos = await todoService.getTodos();
-      // print('Todos: $todos');
-
-      //Edit a Todo
-      // Todo todo = todos[0].copyWith(
-      //   title: 'Updated Title',
-      //   description: 'Updated description from Flutter app',
-      //   isCompleted: false,
-      //   priority: TodoPriority.high,
-      // );
-
-      // final updatedTodo = await todoService.editTodo(todo);
-      // print('Updated todo: $updatedTodo');
-
-      // Add a new Todo
-      // final dueDate = DateTime(2026, 7, 28);
-      // final newTodo = Todo.create(
-      //   title: 'New Todo from Flutter app',
-      //   description: 'This is a new todo item.',
-      //   category: TodoCategory.work,
-      //   priority: TodoPriority.high,
-      //   dueDate: dueDate,
-      //   reminderDate: dueDate.subtract(const Duration(days: 2)),
-      // );
-      // todo = await todoService.addNewTodo(newTodo);
-      // print('Added todo: $todo');
-
-      //Delete a Todo
-      await todoService.deleteTodo('f99b3228-d08c-4b58-b566-c2ff7889b78c');
-      print('Todo is deleted successfully');
-    } catch (e) {
-      print('Error occured: $e');
-    }
+class _TodosScreenState extends State<TodosScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) async {
+        await context.read<TodoProvider>().getTodos();
+      },
+    );
   }
 
   @override
@@ -52,11 +27,51 @@ class TodosScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Todos', style: TextStyle(fontWeight: .bold)),
       ),
-      body: Center(
-        child: FilledButton(
-          onPressed: _handleButtonPressed,
-          child: const Text('Delete Todo'),
-        ),
+      body: Consumer<TodoProvider>(
+        builder: (context, todoProvider, child) {
+          switch (todoProvider.loadState) {
+            case TodoLoadState.initial:
+            case TodoLoadState.loading:
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            case TodoLoadState.failed:
+              return Center(
+                child: Text(todoProvider.errorMessage!),
+              );
+            case TodoLoadState.success:
+              final todos = todoProvider.todos;
+              return RefreshIndicator(
+                onRefresh: todoProvider.getTodos,
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    todos.isEmpty
+                        ? const SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: Center(
+                              child: Text(
+                                'No todos yet.\nTap + to add your first one!',
+                                textAlign: .center,
+                              ),
+                            ),
+                          )
+                        : SliverList.builder(
+                            itemCount: todos.length,
+                            itemBuilder: (context, index) {
+                              final todo = todos[index];
+                              return ListTile(
+                                title: Text(todo.title),
+                                key: ValueKey(todo.id),
+                                subtitle: Text(todo.description ?? ''),
+                              );
+                            },
+                          ),
+                  ],
+                ),
+              );
+          }
+        },
       ),
     );
   }
